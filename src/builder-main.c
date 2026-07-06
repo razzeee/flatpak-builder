@@ -32,6 +32,7 @@
 
 #include "builder-flatpak-utils.h"
 #include "builder-manifest.h"
+#include "builder-sbom.h"
 #include "builder-utils.h"
 #include "builder-git.h"
 
@@ -65,6 +66,7 @@ static gboolean opt_sandboxed;
 static gboolean opt_rebuild_on_sdk_change;
 static gboolean opt_skip_if_unchanged;
 static gboolean opt_install;
+static gboolean opt_sbom;
 static char *opt_state_dir;
 static char *opt_from_git;
 static char *opt_from_git_branch;
@@ -128,6 +130,7 @@ static GOptionEntry entries[] = {
   { "body", 'b', 0, G_OPTION_ARG_STRING, &opt_body, "Full description (passed to build-export)", "BODY" },
   { "collection-id", 0, 0, G_OPTION_ARG_STRING, &opt_collection_id, "Collection ID (passed to build-export)", "COLLECTION-ID" },
   { "token-type", 0, 0, G_OPTION_ARG_INT, &opt_token_type, "Set type of token needed to install this commit (passed to build-export)", "VAL" },
+  { "sbom", 0, 0, G_OPTION_ARG_NONE, &opt_sbom, "Generate CycloneDX 1.7 SBOM artifacts", NULL },
   { "gpg-sign", 0, 0, G_OPTION_ARG_STRING_ARRAY, &opt_key_ids, "GPG Key ID to sign the commit with", "KEY-ID"},
   { "gpg-homedir", 0, 0, G_OPTION_ARG_STRING, &opt_gpg_homedir, "GPG Homedir to use when looking for keyrings", "HOMEDIR"},
   { "force-clean", 0, 0, G_OPTION_ARG_NONE, &opt_force_clean, "Erase previous contents of DIRECTORY", NULL },
@@ -1074,6 +1077,33 @@ main (int    argc,
           g_printerr ("Error: %s\n", error->message);
           return 1;
         }
+
+    }
+
+  if (opt_sbom && !opt_build_only)
+    {
+      builder_cache_checksum_str (cache, "sbom-v1");
+      builder_cache_checksum_str (cache, PACKAGE_VERSION);
+      builder_cache_checksum_str (cache, manifest_sha256);
+
+      if (!builder_cache_lookup (cache, "sbom"))
+        {
+          if (!builder_sbom_embed (manifest, build_context, manifest_sha256, &error))
+            {
+              g_printerr ("SBOM generation failed: %s\n", error->message);
+              return 1;
+            }
+
+          if (!builder_cache_commit (cache, "SBOM", &error))
+            {
+              g_printerr ("SBOM cache commit failed: %s\n", error->message);
+              return 1;
+            }
+        }
+      else
+        {
+          g_print ("Cache hit for sbom, skipping\n");
+        }
     }
 
   if (!opt_require_changes && !opt_export_only)
@@ -1114,6 +1144,17 @@ main (int    argc,
                       NULL))
         {
           g_printerr ("Export failed: %s\n", error->message);
+          return 1;
+        }
+
+      if (opt_sbom &&
+          !builder_sbom_write_side_artifact (manifest, build_context,
+                                             flatpak_file_get_path_cached (export_repo),
+                                             app_dir_path,
+                                             manifest_sha256,
+                                             &error))
+        {
+          g_printerr ("SBOM generation failed: %s\n", error->message);
           return 1;
         }
 

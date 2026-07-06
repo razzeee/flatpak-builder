@@ -10,6 +10,7 @@ flatpak_builder_sources = files(
   'builder-options.c',
   'builder-post-process.c',
   'builder-sdk-config.c',
+  'builder-sbom.c',
   'builder-source.c',
   'builder-source-archive.c',
   'builder-source-bzr.c',
@@ -73,4 +74,3 @@ flatpak_builder = executable(
   dependencies: flatpak_builder_deps,
   install: true,
 )
-

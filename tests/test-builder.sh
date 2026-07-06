@@ -23,7 +23,7 @@ set -euo pipefail
 
 skip_without_fuse
 
-echo "1..13"
+echo "1..14"
 
 setup_repo
 install_repo
@@ -133,6 +133,23 @@ run --command=cat org.test.Hello2 /app/share/app-data > app_data_2
 assert_file_has_content app_data_2 version2
 
 echo "ok update"
+
+APPDIR=appdir-sbom run_build --repo="$REPO" --sbom test.json
+SBOM_COMMIT=$(ostree --repo="$REPO" rev-parse "app/org.test.Hello2/$ARCH/master")
+assert_has_file appdir-sbom/files/share/sbom/org.test.Hello2.cdx.json
+assert_has_file "appdir-sbom/org.test.Hello2@$SBOM_COMMIT.cdx.json"
+assert_file_has_content "appdir-sbom/org.test.Hello2@$SBOM_COMMIT.cdx.json" '"bomFormat" : "CycloneDX"'
+assert_file_has_content "appdir-sbom/org.test.Hello2@$SBOM_COMMIT.cdx.json" '"specVersion" : "1.7"'
+assert_file_has_content "appdir-sbom/org.test.Hello2@$SBOM_COMMIT.cdx.json" '"name" : "flatpak:commit"'
+assert_file_has_content "appdir-sbom/org.test.Hello2@$SBOM_COMMIT.cdx.json" "\"value\" : \"$SBOM_COMMIT\""
+assert_file_has_content "appdir-sbom/org.test.Hello2@$SBOM_COMMIT.cdx.json" 'flatpak:module:test'
+
+APPDIR=appdir-sbom run_build --repo="$REPO" --sbom test.json
+SBOM_COMMIT=$(ostree --repo="$REPO" rev-parse "app/org.test.Hello2/$ARCH/master")
+assert_has_file appdir-sbom/files/share/sbom/org.test.Hello2.cdx.json
+assert_has_file "appdir-sbom/org.test.Hello2@$SBOM_COMMIT.cdx.json"
+
+echo "ok sbom"
 
 # The build-args of --help should prevent the faulty cleanup and
 # platform-cleanup commands from executing

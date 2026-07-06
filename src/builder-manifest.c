@@ -1526,6 +1526,18 @@ builder_manifest_get_token_type (BuilderManifest *self)
   return self->token_type;
 }
 
+gboolean
+builder_manifest_get_build_runtime (BuilderManifest *self)
+{
+  return self->build_runtime;
+}
+
+gboolean
+builder_manifest_get_build_extension (BuilderManifest *self)
+{
+  return self->build_extension;
+}
+
 void
 builder_manifest_set_default_token_type (BuilderManifest *self,
                                          gint32           default_token_type)

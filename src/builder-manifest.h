@@ -67,6 +67,8 @@ const char *    builder_manifest_get_branch (BuilderManifest *self,
 const char *    builder_manifest_get_collection_id (BuilderManifest *self);
 gint32          builder_manifest_get_token_type (BuilderManifest *self);
 const char *    builder_manifest_get_extension_tag (BuilderManifest *self);
+gboolean        builder_manifest_get_build_runtime (BuilderManifest *self);
+gboolean        builder_manifest_get_build_extension (BuilderManifest *self);
 void            builder_manifest_set_default_collection_id (BuilderManifest *self,
                                                             const char      *default_collection_id);
 void            builder_manifest_set_default_token_type (BuilderManifest *self,
