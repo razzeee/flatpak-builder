@@ -2436,6 +2436,7 @@ cmpstringp (const void *p1, const void *p2)
 static gboolean
 appstreamcli_compose (GError             **error,
                       BuilderAsUrlPolicy   as_url_policy,
+                      const char          *icon_policy,
                       ...)
 {
   g_autoptr(GPtrArray) args = NULL;
@@ -2449,7 +2450,10 @@ appstreamcli_compose (GError             **error,
   if (as_url_policy == BUILDER_AS_URL_POLICY_FULL)
     g_ptr_array_add (args, g_strdup ("--no-partial-urls"));
 
-  va_start (ap, as_url_policy);
+  if (icon_policy != NULL)
+    g_ptr_array_add (args, g_strdup_printf ("--icon-policy=%s", icon_policy));
+
+  va_start (ap, icon_policy);
   while ((arg = va_arg (ap, const gchar *)))
     g_ptr_array_add (args, g_strdup (arg));
   g_ptr_array_add (args, NULL);
@@ -3100,6 +3104,7 @@ builder_manifest_cleanup (BuilderManifest *self,
           const char *opt_mirror_screenshots_url = builder_context_get_opt_mirror_screenshots_url (context);
           gboolean opt_export_only = builder_context_get_opt_export_only (context);
           BuilderAsUrlPolicy as_url_policy = builder_context_get_as_url_policy (context);
+          const char *icon_policy = builder_context_get_opt_appstream_compose_icon_policy (context);
 
           if (opt_mirror_screenshots_url && !opt_export_only)
             {
@@ -3112,6 +3117,7 @@ builder_manifest_cleanup (BuilderManifest *self,
               g_print ("Saving screenshots in %s\n", flatpak_file_get_path_cached (media_dir));
               if (!appstreamcli_compose (error,
                                          as_url_policy,
+                                         icon_policy,
                                          "--prefix=/",
                                          origin,
                                          arg_base_url,
@@ -3129,6 +3135,7 @@ builder_manifest_cleanup (BuilderManifest *self,
               g_print ("Running appstreamcli compose\n");
               if (!appstreamcli_compose (error,
                                          as_url_policy,
+                                         icon_policy,
                                          "--prefix=/",
                                          origin,
                                          result_root_arg,
